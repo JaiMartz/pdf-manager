@@ -26,10 +26,10 @@ public class PdfControllerImpl {
     @GetMapping(path = "/create", produces = "application/pdf")
     public ResponseEntity<InputStreamResource> createPdf() {
         try {
-            ByteArrayInputStream pdf = service.createEmptyPdf();
+            ByteArrayInputStream pdf = service.createPdf();
             log.info("Este es un log de ejemplo hecho con lombok para SLF4J");
 
-            InputStream is = service.createEmptyPdf();
+            InputStream is = service.createPdf();
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=generated.pdf")
                     .contentType(MediaType.APPLICATION_PDF)
@@ -52,5 +52,18 @@ public class PdfControllerImpl {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=merged.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(new InputStreamResource(pdf));
+    }
+
+    @PostMapping("/split")
+    public ResponseEntity<InputStreamResource> splitPdf(
+            @RequestParam("pdf") MultipartFile pdfFile,
+            @RequestParam("startPage") int startPage,
+            @RequestParam("endPage") int endPage) {
+        ByteArrayInputStream splitPdf = service.splitPdf(pdfFile, startPage, endPage);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=split..pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(splitPdf));
     }
 }

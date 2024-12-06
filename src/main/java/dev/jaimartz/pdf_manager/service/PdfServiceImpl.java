@@ -7,9 +7,7 @@ import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfWriter;
 import dev.jaimartz.pdf_manager.utils.ChiquitoTexts;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,11 +21,11 @@ public class PdfServiceImpl implements PdfService{
     @Value("${chiquito.ipsum.3}")
     private String chiquitoIpsum3;
 
-    @Autowired
-    ResourceLoader resourceLoader;
+
+    //ResourceLoader resourceLoader;
 
     @Override
-    public ByteArrayInputStream createEmptyPdf() {
+    public ByteArrayInputStream createPdf() {
 
         try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
@@ -74,4 +72,35 @@ public class PdfServiceImpl implements PdfService{
             throw new RuntimeException("Error uniendo PDF's");
         }
     }
+
+    @Override
+    public ByteArrayInputStream splitPdf(MultipartFile pdfFile, int startPage, int endPage) {
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            PdfReader reader = new PdfReader(pdfFile.getInputStream());
+            Document document = new Document();
+            PdfCopy copy = new PdfCopy(document, out);
+            document.open();
+
+            if (startPage < 1 || endPage > reader.getNumberOfPages() || startPage > endPage) {
+                throw new IllegalArgumentException("El rango de páginas no es válido.");
+            }
+
+            for (int i = startPage; i <= endPage ; i++) {
+                copy.addPage(copy.getImportedPage(reader, i));
+            }
+
+            reader.close();
+            document.close();
+
+            return new ByteArrayInputStream(out.toByteArray());
+
+
+        } catch (Exception e) {
+
+        }
+        return null;
+    }
+
+
 }
