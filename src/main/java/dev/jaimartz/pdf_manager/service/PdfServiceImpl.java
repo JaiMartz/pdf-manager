@@ -1,52 +1,77 @@
 package dev.jaimartz.pdf_manager.service;
 
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.PdfWriter;
+import com.lowagie.text.Document;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.pdf.PdfCopy;
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.PdfWriter;
+import dev.jaimartz.pdf_manager.utils.ChiquitoTexts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
 
 @Slf4j
 @Service
 public class PdfServiceImpl implements PdfService{
 
+    @Value("${chiquito.ipsum.3}")
+    private String chiquitoIpsum3;
+
     @Autowired
     ResourceLoader resourceLoader;
 
     @Override
-    public InputStream createEmptyPdf() {
-        try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            //Path path = Paths.get(ClassLoader.getSystemResource("DDD_logo.webp").toURI());
-            ClassPathResource resource = new ClassPathResource("static/DDD_logo.png");
-            File file = resource.getFile();
-            //Resource resource = resourceLoader.getResource("classpath:static/DDD_logo.webp");
+    public ByteArrayInputStream createEmptyPdf() {
+
+        try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             Document document = new Document();
-            PdfWriter.getInstance(document, outputStream);
+            PdfWriter.getInstance(document, out);
 
             document.open();
-            Font font = FontFactory.getFont(FontFactory.COURIER, 16, BaseColor.BLACK);
-            Chunk chunk = new Chunk("Hello World", font);
-            document.add(chunk);
 
-            Image img = Image.getInstance(file.getAbsolutePath());
-            document.add(img);
-
+            document.add(new Paragraph("Hola desde OpenPDF y Spring Boot!"));
+            document.add(new Paragraph("Este PDF fue generado dinámicament."));
+            document.add(new Paragraph("\n"));
+            document.add(new Paragraph(ChiquitoTexts.chiquitoIpsum3()));
             document.close();
-            InputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-
-            return inputStream;
+            return new ByteArrayInputStream(out.toByteArray());
         } catch (Exception e) {
             log.error("La hemos cagao amigo: {}", e.getMessage());
             return null;
+        }
+    }
+
+    @Override
+    public ByteArrayInputStream mergePdfs(MultipartFile pdf1, MultipartFile pdf2) {
+        try(ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Document document = new Document();
+            PdfCopy copy = new PdfCopy(document, out);
+            document.open();
+
+            PdfReader reader1 = new PdfReader(pdf1.getInputStream());
+            PdfReader reader2 = new PdfReader(pdf2.getInputStream());
+
+            for (int i = 1; i <= reader1.getNumberOfPages(); i++) {
+                copy.addPage(copy.getImportedPage(reader1, i));
+            }
+            for (int i = 1; i <= reader2.getNumberOfPages(); i++) {
+                copy.addPage(copy.getImportedPage(reader2, i));
+            }
+
+            reader1.close();
+            reader2.close();
+            document.close();
+
+            return new ByteArrayInputStream(out.toByteArray());
+        } catch (Exception e) {
+            throw new RuntimeException("Error uniendo PDF's");
         }
     }
 }

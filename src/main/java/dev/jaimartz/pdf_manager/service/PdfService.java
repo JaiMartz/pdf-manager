@@ -1,8 +1,12 @@
 package dev.jaimartz.pdf_manager.service;
 
-import java.io.InputStream;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
 
 public interface PdfService {
 
-    InputStream createEmptyPdf();
+    ByteArrayInputStream createEmptyPdf();
+
+    ByteArrayInputStream mergePdfs(MultipartFile pdf1, MultipartFile pdf2);
 }
